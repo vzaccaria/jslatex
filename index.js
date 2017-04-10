@@ -96,6 +96,7 @@ prog
     _.identity,
     "-shell-escape -halt-on-error"
   )
+  .option("--nobibtex", "Dont run bibtex")
   .option("--open", "Open pdf file when generated")
   .option("--watch", "Watch for latex files created")
   .action(function(args, options, logger) {
