@@ -7,6 +7,7 @@ const ora = require("ora");
 const LatexLogParser = require("./lib/latex-log-parser").entry();
 const os = require("os");
 const watch = require("watch");
+const debug = require("debug")("jslatex");
 
 const chalk = require("chalk");
 
@@ -14,6 +15,7 @@ let Promise = require("bluebird");
 let execP = command => {
   return new Promise((resolve, reject) => {
     require("child_process").exec(command, (error, stdout, stderr) => {
+      debug({ error, stdout, stderr });
       if (error) {
         reject({ error, stdout, stderr });
       } else {
@@ -50,7 +52,7 @@ let reportLog = l => {
 
 let { test } = require("shelljs");
 
-let executeCommand = (command, type) => {
+let executeCommand = (command, { type, options }) => {
   let spinner = ora(`Executing: ${command}`).start();
   return execP(command)
     .then(({ stdout }) => {
@@ -64,8 +66,12 @@ let executeCommand = (command, type) => {
       }
     })
     .catch(err => {
-      spinner.fail(`Command failed with code: ${err.error.code}`);
-      throw err;
+      if (!(options.force && type === "bibtex")) {
+        spinner.fail(`Command failed with code: ${err.error.code}`);
+        throw err;
+      } else {
+        spinner.succeed("Bibtex failed but continuing");
+      }
     });
 };
 
@@ -77,27 +83,33 @@ let compile = (target, latexcmd, latexopts, options) => {
     let basename = path.basename(target, ".tex");
     let exebib = `bibtex ${basename}`;
     let filelist = _.map(
-      [".aux", ".log", ".blg", ".bbl"],
+      [".aux", ".log", ".blg", ".bbl", ".out"],
       x => `${basename}${x}`
     );
     let execrm = `rm -f ${_.join(filelist, " ")}`;
-    return executeCommand(execc, "latex")
+    return executeCommand(execc, { type: "latex", options })
       .then(() => {
         if (!options.nobibtex) {
-          return executeCommand(exebib)
-            .then(() => executeCommand(execc, "latex"))
-            .then(() => executeCommand(execc, "latex"));
+          return executeCommand(exebib, { type: "bibtex", options })
+            .then(() => executeCommand(execc, { type: "latex", options }))
+            .then(() => executeCommand(execc, { type: "latex", options }));
         }
       })
-      .then(() => executeCommand(execrm))
+      .then(() => executeCommand(execrm, { type: "remove", options }))
       .then(() => {
         if (options.open) {
           const ot = os.type();
           if (ot === "Darwin") {
-            return executeCommand(`open ${basename}.pdf`);
+            return executeCommand(`open ${basename}.pdf`, {
+              type: "open",
+              options
+            });
           } else {
             if (ot === "Linux") {
-              return executeCommand(`xdg-open ${basename}.pdf`);
+              return executeCommand(`xdg-open ${basename}.pdf`, {
+                type: "open",
+                options
+              });
             } else {
               console.log(`Can't open pdfs on ${ot}.`);
             }
@@ -119,6 +131,7 @@ prog
     "-shell-escape -halt-on-error"
   )
   .option("--nobibtex", "Dont run bibtex")
+  .option("--force", "Force even if commands return codes != 0")
   .option("--open", "Open pdf file when generated")
   .option("--watch", "Watch for latex files created")
   .action(function(args, options) {
