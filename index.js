@@ -172,6 +172,29 @@ prog
             }
           });
         });
+      } else {
+        if (args.target === ".") {
+          let targetDir;
+          targetDir = process.cwd();
+          watch.createMonitor(targetDir, { ignoreDotFiles: true }, function(
+            monitor
+          ) {
+            console.log(`Watching for ${targetDir}`);
+            monitor.on("changed", function(f) {
+              debug(f);
+              if (path.extname(f) === ".tex") {
+                console.log(`Recompiling because ${f} changed`);
+                compile(f, args.cmd, args.opts, options)
+                  .catch(() => {})
+                  .then(() => {
+                    if (options.open) {
+                      options.open = false;
+                    }
+                  });
+              }
+            });
+          });
+        }
       }
     }
   });
