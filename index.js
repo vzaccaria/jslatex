@@ -67,9 +67,9 @@ let executeCommand = (command, type) => {
     });
 };
 
-let compile = (target, cmd, opts) => {
+let compile = (target, latexcmd, latexopts, options) => {
   if (test("-e", target) && test("-f", target)) {
-    let execc = `${cmd} ${opts} ${target}`;
+    let execc = `${latexcmd} ${latexopts} ${target}`;
     let basename = path.basename(target, ".tex");
     let exebib = `bibtex ${basename}`;
     let filelist = _.map(
@@ -78,9 +78,13 @@ let compile = (target, cmd, opts) => {
     );
     let execrm = `rm -f ${_.join(filelist, " ")}`;
     return executeCommand(execc, "latex")
-      .then(() => executeCommand(exebib))
-      .then(() => executeCommand(execc, "latex"))
-      .then(() => executeCommand(execc, "latex"))
+      .then(() => {
+        if (!options.nobibtex) {
+          return executeCommand(exebib)
+            .then(() => executeCommand(execc, "latex"))
+            .then(() => executeCommand(execc, "latex"));
+        }
+      })
       .then(() => executeCommand(execrm));
   }
 };
@@ -99,8 +103,8 @@ prog
   .option("--nobibtex", "Dont run bibtex")
   .option("--open", "Open pdf file when generated")
   .option("--watch", "Watch for latex files created")
-  .action(function(args, options, logger) {
-    compile(args.target, args.cmd, args.opts, logger).catch(() => {});
+  .action(function(args, options) {
+    compile(args.target, args.cmd, args.opts, options).catch(() => {});
   });
 
 prog.parse(process.argv);
