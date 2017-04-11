@@ -184,13 +184,7 @@ prog
               debug(f);
               if (path.extname(f) === ".tex") {
                 console.log(`Recompiling because ${f} changed`);
-                compile(f, args.cmd, args.opts, options)
-                  .catch(() => {})
-                  .then(() => {
-                    if (options.open) {
-                      options.open = false;
-                    }
-                  });
+                compile(f, args.cmd, args.opts, options).catch(() => {});
               }
             });
           });
