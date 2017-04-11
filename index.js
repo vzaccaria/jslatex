@@ -5,6 +5,8 @@ const _ = require("lodash");
 const path = require("path");
 const ora = require("ora");
 const LatexLogParser = require("./lib/latex-log-parser").entry();
+const os = require("os");
+const watch = require("watch");
 
 const chalk = require("chalk");
 
@@ -67,8 +69,10 @@ let executeCommand = (command, type) => {
     });
 };
 
+let existingFile = target => test("-e", target) && test("-f", target);
+
 let compile = (target, latexcmd, latexopts, options) => {
-  if (test("-e", target) && test("-f", target)) {
+  if (existingFile(target)) {
     let execc = `${latexcmd} ${latexopts} ${target}`;
     let basename = path.basename(target, ".tex");
     let exebib = `bibtex ${basename}`;
@@ -85,7 +89,21 @@ let compile = (target, latexcmd, latexopts, options) => {
             .then(() => executeCommand(execc, "latex"));
         }
       })
-      .then(() => executeCommand(execrm));
+      .then(() => executeCommand(execrm))
+      .then(() => {
+        if (options.open) {
+          const ot = os.type();
+          if (ot === "Darwin") {
+            return executeCommand(`open ${basename}.pdf`);
+          } else {
+            if (ot === "Linux") {
+              return executeCommand(`xdg-open ${basename}.pdf`);
+            } else {
+              console.log(`Can't open pdfs on ${ot}.`);
+            }
+          }
+        }
+      });
   }
 };
 
@@ -104,7 +122,38 @@ prog
   .option("--open", "Open pdf file when generated")
   .option("--watch", "Watch for latex files created")
   .action(function(args, options) {
-    compile(args.target, args.cmd, args.opts, options).catch(() => {});
+    if (!options.watch) {
+      compile(args.target, args.cmd, args.opts, options).catch(() => {});
+    } else {
+      if (existingFile(args.target)) {
+        let targetDir;
+        let target = args.target;
+        let absoluteTargetPath;
+        if (!path.isAbsolute(target)) {
+          targetDir = path.resolve(process.cwd(), path.dirname(target));
+          absoluteTargetPath = path.resolve(process.cwd(), target);
+        } else {
+          targetDir = path.dirname(target);
+          absoluteTargetPath = target;
+        }
+
+        watch.createMonitor(targetDir, function(monitor) {
+          console.log(`Watching for ${targetDir} - ${absoluteTargetPath}`);
+          monitor.files[absoluteTargetPath];
+          monitor.on("changed", function(f) {
+            if (f === absoluteTargetPath) {
+              compile(args.target, args.cmd, args.opts, options)
+                .catch(() => {})
+                .then(() => {
+                  if (options.open) {
+                    options.open = false;
+                  }
+                });
+            }
+          });
+        });
+      }
+    }
   });
 
 prog.parse(process.argv);
