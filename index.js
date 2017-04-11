@@ -137,7 +137,9 @@ prog
           absoluteTargetPath = target;
         }
 
-        watch.createMonitor(targetDir, function(monitor) {
+        watch.createMonitor(targetDir, { ignoreDotFiles: true }, function(
+          monitor
+        ) {
           console.log(`Watching for ${targetDir}`);
           monitor.files[absoluteTargetPath];
           monitor.on("changed", function(f) {
