@@ -138,10 +138,15 @@ prog
         }
 
         watch.createMonitor(targetDir, function(monitor) {
-          console.log(`Watching for ${targetDir} - ${absoluteTargetPath}`);
+          console.log(`Watching for ${targetDir}`);
           monitor.files[absoluteTargetPath];
           monitor.on("changed", function(f) {
-            if (f === absoluteTargetPath) {
+            if (
+              f === absoluteTargetPath ||
+              path.extname(f) === ".tex" ||
+              path.extname(f) === ".bib"
+            ) {
+              console.log(`Recompiling because ${f} changed`);
               compile(args.target, args.cmd, args.opts, options)
                 .catch(() => {})
                 .then(() => {
