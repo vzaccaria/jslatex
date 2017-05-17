@@ -66,7 +66,7 @@ let executeCommand = (command, { type, options }) => {
       }
     })
     .catch(err => {
-      if (!(options.force && type === "bibtex")) {
+      if (!(!options.strict && type === "bibtex")) {
         spinner.fail(`Command failed with code: ${err.error.code}`);
         throw err;
       } else {
@@ -79,9 +79,9 @@ let existingFile = target => test("-e", target) && test("-f", target);
 
 let compile = (target, latexcmd, latexopts, options) => {
   if (existingFile(target)) {
-    let execc = `${latexcmd} ${latexopts} ${target}`;
+    let execc = `${latexcmd} ${latexopts} '${target}'`;
     let basename = path.basename(target, ".tex");
-    let exebib = `bibtex ${basename}`;
+    let exebib = `bibtex '${basename}'`;
     let filelist = _.map(
       [".aux", ".log", ".blg", ".bbl", ".out"],
       x => `${basename}${x}`
@@ -100,13 +100,13 @@ let compile = (target, latexcmd, latexopts, options) => {
         if (options.open) {
           const ot = os.type();
           if (ot === "Darwin") {
-            return executeCommand(`open ${basename}.pdf`, {
+            return executeCommand(`open '${basename}.pdf'`, {
               type: "open",
               options
             });
           } else {
             if (ot === "Linux") {
-              return executeCommand(`xdg-open ${basename}.pdf`, {
+              return executeCommand(`xdg-open '${basename}.pdf'`, {
                 type: "open",
                 options
               });
@@ -131,7 +131,7 @@ prog
     "-shell-escape -halt-on-error"
   )
   .option("--nobibtex", "Dont run bibtex")
-  .option("--force", "Force even if commands return codes != 0")
+  .option("--strict", "Exit when commands return codes != 0")
   .option("--open", "Open pdf file when generated")
   .option("--watch", "Watch for latex files created")
   .action(function(args, options) {
