@@ -36,7 +36,7 @@ let p = v => {
   }
 };
 
-let reportLog = l => {
+let reportLog = (l, options) => {
   let errors = _.size(l.errors) * (-1);
   let warnings = _.size(l.warnings);
   let citwarnings = _.size(
@@ -45,7 +45,13 @@ let reportLog = l => {
     })
   );
   let typesetting = _.size(l.typesetting);
-  return `[${p(errors)}] errors, [${p(warnings)}] warnings, [${p(
+  if (!options.silent) {
+    console.log("");
+    _.map(l.errors, e => {
+      console.log(`${e.file}:${e.line} - ${e.message}$`);
+    });
+  }
+  return `[${p(errors * (-1))}] errors, [${p(warnings)}] warnings, [${p(
     citwarnings
   )}] citation warnings, [${p(typesetting)}] typesetting`;
 };
@@ -53,22 +59,30 @@ let reportLog = l => {
 let { test } = require("shelljs");
 
 let executeCommand = (command, { type, options }) => {
-  let spinner = ora(`Executing: ${command}`).start();
+  let s = command;
+  if (!options.notrunc) {
+    s = _.truncate(command, { length: 50 });
+  }
+  let spinner = ora(`Executing: ${s}`).start();
+
   return execP(command)
     .then(({ stdout }) => {
       if (type === "latex") {
         let logEntries = LatexLogParser.parse(stdout, {
           ignoreDuplicates: true
         });
-        spinner.succeed(reportLog(logEntries));
+        spinner.succeed(reportLog(logEntries, options));
       } else {
         spinner.succeed();
       }
     })
-    .catch(err => {
+    .catch(({ stdout, error }) => {
       if (!(!options.strict && type === "bibtex")) {
-        spinner.fail(`Command failed with code: ${err.error.code}`);
-        throw err;
+        let logEntries = LatexLogParser.parse(stdout, {
+          ignoreDuplicates: true
+        });
+        spinner.fail(reportLog(logEntries, options));
+        throw error;
       } else {
         spinner.succeed("Bibtex failed but continuing");
       }
@@ -83,11 +97,14 @@ let compile = (target, latexcmd, latexopts, options) => {
     let basename = path.basename(target, ".tex");
     let exebib = `bibtex '${basename}'`;
     let filelist = _.map(
-      [".aux", ".log", ".blg", ".bbl", ".out"],
+      [".aux", ".log", ".blg", ".bbl", ".out", ".pyg", ".toc"],
       x => `${basename}${x}`
     );
     let execrm = `rm -f ${_.join(filelist, " ")}`;
-    return executeCommand(execc, { type: "latex", options })
+    return executeCommand(execrm, { type: "remove", options })
+      .then(() => {
+        return executeCommand(execc, { type: "latex", options });
+      })
       .then(() => {
         if (!options.nobibtex) {
           return executeCommand(exebib, { type: "bibtex", options })
@@ -95,7 +112,6 @@ let compile = (target, latexcmd, latexopts, options) => {
             .then(() => executeCommand(execc, { type: "latex", options }));
         }
       })
-      .then(() => executeCommand(execrm, { type: "remove", options }))
       .then(() => {
         if (options.open) {
           const ot = os.type();
@@ -115,7 +131,8 @@ let compile = (target, latexcmd, latexopts, options) => {
             }
           }
         }
-      });
+      })
+      .finally(() => executeCommand(execrm, { type: "remove", options }));
   }
 };
 
@@ -134,6 +151,8 @@ prog
   .option("--strict", "Exit when commands return codes != 0")
   .option("--open", "Open pdf file when generated")
   .option("--watch", "Watch for latex files created")
+  .option("--notrunc", "Dont truncate command line output")
+  .option("--silent", "Suppress errors")
   .action(function(args, options) {
     if (!options.watch) {
       compile(args.target, args.cmd, args.opts, options).catch(() => {});
