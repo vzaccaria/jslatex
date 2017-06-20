@@ -99,10 +99,11 @@ let compile = (target, latexcmd, latexopts, options) => {
     let basename = path.basename(target, ".tex");
     let exebib = `bibtex '${basename}'`;
     let filelist = _.map(
-      [".aux", ".log", ".blg", ".bbl", ".out", ".pyg", ".toc"],
+      [".aux", ".log", ".blg", ".bbl", ".out", ".pyg", ".toc", ".snm", ".nav"],
       x => `${basename}${x}`
     );
-    let execrm = `rm -f ${_.join(filelist, " ")}`;
+    filelist = filelist.concat([`_minted-${basename}`]);
+    let execrm = `rm -rf ${_.join(filelist, " ")}`;
     clipboardy.writeSync(execc);
     return executeCommand(execrm, { type: "remove", options })
       .then(() => {
