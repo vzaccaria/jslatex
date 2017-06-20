@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/* global require */
+
 const prog = require("caporal");
 const _ = require("lodash");
 const path = require("path");
@@ -8,7 +10,7 @@ const LatexLogParser = require("./lib/latex-log-parser").entry();
 const os = require("os");
 const watch = require("watch");
 const debug = require("debug")("jslatex");
-
+const clipboardy = require("clipboardy");
 const chalk = require("chalk");
 
 let Promise = require("bluebird");
@@ -101,6 +103,7 @@ let compile = (target, latexcmd, latexopts, options) => {
       x => `${basename}${x}`
     );
     let execrm = `rm -f ${_.join(filelist, " ")}`;
+    clipboardy.writeSync(execc);
     return executeCommand(execrm, { type: "remove", options })
       .then(() => {
         return executeCommand(execc, { type: "latex", options });
