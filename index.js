@@ -33,13 +33,12 @@ let p = v => {
   } else {
     if (v === 0) {
       return chalk.green(v);
-    } else
-      return chalk.yellow(v);
+    } else return chalk.yellow(v);
   }
 };
 
 let reportLog = (l, options) => {
-  let errors = _.size(l.errors) * (-1);
+  let errors = _.size(l.errors) * -1;
   let warnings = _.size(l.warnings);
   let citwarnings = _.size(
     _.filter(l.warnings, w => {
@@ -53,7 +52,19 @@ let reportLog = (l, options) => {
       console.log(`${e.file}:${e.line} - ${e.message}$`);
     });
   }
-  return `[${p(errors * (-1))}] errors, [${p(warnings)}] warnings, [${p(
+  if (options.verbose) {
+    console.log("");
+    _.map(l.errors, e => {
+      console.log(`${e.file}:${e.line} - ${e.message}$`);
+    });
+    _.map(l.warnings, e => {
+      console.log(`${e.file}:${e.line} - ${e.message}$`);
+    });
+    _.map(l.typesetting, e => {
+      console.log(`${e.file}:${e.line} - ${e.message}$`);
+    });
+  }
+  return `[${p(errors * -1)}] errors, [${p(warnings)}] warnings, [${p(
     citwarnings
   )}] citation warnings, [${p(typesetting)}] typesetting`;
 };
@@ -157,6 +168,7 @@ prog
   .option("--watch", "Watch for latex files created")
   .option("--notrunc", "Dont truncate command line output")
   .option("--silent", "Suppress errors")
+  .option("--verbose", "Show all warnings and errors")
   .action(function(args, options) {
     if (!options.watch) {
       compile(args.target, args.cmd, args.opts, options).catch(() => {});
