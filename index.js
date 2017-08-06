@@ -37,6 +37,16 @@ let p = v => {
   }
 };
 
+let msg = (level, string) => {
+  let marker = ">>>";
+  if (level === "error") {
+    marker = chalk.red.bold(marker);
+  } else {
+    marker = chalk.blue(marker);
+  }
+  console.log(`${marker} ${string}`);
+};
+
 let reportLog = (l, options) => {
   let errors = _.size(l.errors) * -1;
   let warnings = _.size(l.warnings);
@@ -49,19 +59,20 @@ let reportLog = (l, options) => {
   if (!options.silent) {
     console.log("");
     _.map(l.errors, e => {
-      console.log(`${e.file}:${e.line} - ${e.message}$`);
+      msg("error", `${e.file}:${e.line} - ${e.message}$`);
     });
+    console.log("");
   }
   if (options.verbose) {
     console.log("");
     _.map(l.errors, e => {
-      console.log(`${e.file}:${e.line} - ${e.message}$`);
+      msg("error", `${e.file}:${e.line} - ${e.message}$`);
     });
     _.map(l.warnings, e => {
-      console.log(`${e.file}:${e.line} - ${e.message}$`);
+      msg("info", `${e.file}:${e.line} - ${e.message}$`);
     });
     _.map(l.typesetting, e => {
-      console.log(`${e.file}:${e.line} - ${e.message}$`);
+      msg("info", `${e.file}:${e.line} - ${e.message}$`);
     });
   }
   return `[${p(errors * -1)}] errors, [${p(warnings)}] warnings, [${p(
@@ -110,7 +121,18 @@ let compile = (target, latexcmd, latexopts, options) => {
     let basename = path.basename(target, ".tex");
     let exebib = `bibtex '${basename}'`;
     let filelist = _.map(
-      [".aux", ".log", ".blg", ".bbl", ".out", ".pyg", ".toc", ".snm", ".nav"],
+      [
+        ".aux",
+        ".log",
+        ".blg",
+        ".bbl",
+        ".out",
+        ".pyg",
+        ".toc",
+        ".snm",
+        ".nav",
+        ".*.vrb"
+      ],
       x => `${basename}${x}`
     );
     filelist = filelist.concat([`_minted-${basename}`]);
