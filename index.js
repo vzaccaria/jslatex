@@ -170,6 +170,9 @@ let compile = (target, latexcmd, latexopts, options) => {
         }
       })
       .finally(() => executeCommand(execrm, { type: "remove", options }));
+  } else {
+    console.log(`File not existing`);
+    return Promise.reject();
   }
 };
 
