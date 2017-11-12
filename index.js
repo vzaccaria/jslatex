@@ -91,6 +91,7 @@ let executeCommand = (command, { type, options }) => {
 
   return execP(command)
     .then(({ stdout }) => {
+      options.logger.info(stdout);
       if (type === "latex") {
         let logEntries = LatexLogParser.parse(stdout, {
           ignoreDuplicates: true
@@ -101,6 +102,7 @@ let executeCommand = (command, { type, options }) => {
       }
     })
     .catch(({ stdout, error }) => {
+      options.logger.info(stdout);
       if (!(!options.strict && type === "bibtex")) {
         let logEntries = LatexLogParser.parse(stdout, {
           ignoreDuplicates: true
@@ -194,8 +196,9 @@ prog
   .option("--notrunc", "Dont truncate command line output")
   .option("--silent", "Suppress errors")
   .option("--verbose", "Show all warnings and errors")
-  .action(function(args, options) {
+  .action(function(args, options, logger) {
     if (!options.watch) {
+      options.logger = logger;
       compile(args.target, args.cmd, args.opts, options).catch(() => {});
     } else {
       if (existingFile(args.target)) {
