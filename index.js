@@ -91,7 +91,7 @@ let executeCommand = (command, { type, options }) => {
 
   return execP(command)
     .then(({ stdout }) => {
-      options.logger.info(stdout);
+      options.logger.debug(stdout);
       if (type === "latex") {
         let logEntries = LatexLogParser.parse(stdout, {
           ignoreDuplicates: true
@@ -102,7 +102,7 @@ let executeCommand = (command, { type, options }) => {
       }
     })
     .catch(({ stdout, error }) => {
-      options.logger.info(stdout);
+      options.logger.debug(stdout);
       if (!(!options.strict && type === "bibtex")) {
         let logEntries = LatexLogParser.parse(stdout, {
           ignoreDuplicates: true
