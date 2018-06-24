@@ -139,7 +139,11 @@ let compile = (target, latexcmd, latexopts, options) => {
     );
     filelist = filelist.concat([`_minted-${basename}`]);
     let execrm = `rm -rf ${_.join(filelist, " ")}`;
-    clipboardy.writeSync(execc);
+    try {
+      clipboardy.writeSync(execc);
+    } catch (e) {
+      options.logger.error("For some reason, we can't copy to the clipboard");
+    }
     return executeCommand(execrm, { type: "remove", options })
       .then(() => {
         return executeCommand(execc, { type: "latex", options });
