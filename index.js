@@ -156,21 +156,31 @@ let compile = (target, latexcmd, latexopts, options) => {
         }
       })
       .then(() => {
+        let outputfile = `${basename}.pdf`;
+        if (options.png) {
+          let cnvcm = `convert -density 300 ${basename}.pdf ${basename}.png`;
+          outputfile = `${basename}.png`;
+          return executeCommand(cnvcm, { options }).then(() => {
+            return outputfile;
+          });
+        } else return outputfile;
+      })
+      .then(outputfile => {
         if (options.open) {
           const ot = os.type();
           if (ot === "Darwin") {
-            return executeCommand(`open '${basename}.pdf'`, {
+            return executeCommand(`open '${outputfile}'`, {
               type: "open",
               options
             });
           } else {
             if (ot === "Linux") {
-              return executeCommand(`xdg-open '${basename}.pdf'`, {
+              return executeCommand(`xdg-open '${outputfile}'`, {
                 type: "open",
                 options
               });
             } else {
-              console.log(`Can't open pdfs on ${ot}.`);
+              console.log(`Can't open files on ${ot}.`);
             }
           }
         }
@@ -197,6 +207,7 @@ prog
   .option("--strict", "Exit when commands return codes != 0")
   .option("--open", "Open pdf file when generated")
   .option("--watch", "Watch for latex files created")
+  .option("--png", "Post process the pdf to produce a png")
   .option("--notrunc", "Dont truncate command line output")
   .option("--silent", "Suppress errors")
   .option("--verbose", "Show all warnings and errors")
