@@ -157,6 +157,15 @@ let compile = (target, latexcmd, latexopts, options) => {
       })
       .then(() => {
         let outputfile = `${basename}.pdf`;
+        let coutputfile = `${basename}-crop.pdf`;
+        if (options.crop) {
+          return executeCommand(`pdfcrop ${outputfile} ${coutputfile} && rm ${outputfile} && mv ${coutputfile} ${outputfile}`, {
+            options
+          })
+        }
+      })
+      .then(() => {
+        let outputfile = `${basename}.pdf`;
         if (options.png) {
           let cnvcm = `convert -density 300 ${basename}.pdf ${basename}.png`;
           outputfile = `${basename}.png`;
@@ -211,6 +220,7 @@ prog
   .option("--notrunc", "Dont truncate command line output")
   .option("--silent", "Suppress errors")
   .option("--verbose", "Show all warnings and errors")
+  .option("--crop", "Invoke pdfcrop on produced output")
   .action(function(args, options, logger) {
     if (!options.watch) {
       options.logger = logger;
