@@ -103,6 +103,7 @@ let executeCommand = (command, { type, options }) => {
     })
     .catch(({ stdout, error }) => {
       options.logger.debug(stdout);
+      options.logger.debug(error);
       if (!(!options.strict && type === "bibtex")) {
         let logEntries = LatexLogParser.parse(stdout, {
           ignoreDuplicates: true
@@ -159,9 +160,12 @@ let compile = (target, latexcmd, latexopts, options) => {
         let outputfile = `${basename}.pdf`;
         let coutputfile = `${basename}-crop.pdf`;
         if (options.crop) {
-          return executeCommand(`pdfcrop ${outputfile} ${coutputfile} && rm ${outputfile} && mv ${coutputfile} ${outputfile}`, {
-            options
-          })
+          return executeCommand(
+            `pdfcrop ${outputfile} ${coutputfile} && rm ${outputfile} && mv ${coutputfile} ${outputfile}`,
+            {
+              options
+            }
+          );
         }
       })
       .then(() => {
@@ -222,8 +226,8 @@ prog
   .option("--verbose", "Show all warnings and errors")
   .option("--crop", "Invoke pdfcrop on produced output")
   .action(function(args, options, logger) {
+    options.logger = logger;
     if (!options.watch) {
-      options.logger = logger;
       compile(args.target, args.cmd, args.opts, options).catch(() => {});
     } else {
       if (existingFile(args.target)) {
@@ -251,7 +255,9 @@ prog
             ) {
               console.log(`Recompiling because ${f} changed`);
               compile(args.target, args.cmd, args.opts, options)
-                .catch(() => {})
+                .catch(error => {
+                  logger.debug(error);
+                })
                 .then(() => {
                   if (options.open) {
                     options.open = false;
