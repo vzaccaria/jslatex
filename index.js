@@ -120,6 +120,7 @@ let existingFile = target => test("-e", target) && test("-f", target);
 
 let compile = (target, latexcmd, latexopts, options) => {
   if (existingFile(target)) {
+    latexopts = _.join(_.map(latexopts, k => "-" + k), " ");
     let execc = `${latexcmd} ${latexopts} '${target}'`;
     let basename = path.basename(target, ".tex");
     let exebib = `bibtex '${basename}'`;
@@ -210,12 +211,9 @@ prog
   .description("Compiles latex")
   .argument("<target>", "Top level file or directory")
   .argument("[cmd]", "Compile command", _.identity, "pdflatex")
-  .argument(
-    "[opts]",
-    "Options passed to the compiler",
-    _.identity,
-    "-shell-escape -halt-on-error"
-  )
+  .argument("[opts]", "Options passed to the compiler", _.identity, [
+    "shell-escape,halt-on-error"
+  ])
   .option("--nobibtex", "Dont run bibtex")
   .option("--strict", "Exit when commands return codes != 0")
   .option("--open", "Open pdf file when generated")
@@ -227,6 +225,9 @@ prog
   .option("--crop", "Invoke pdfcrop on produced output")
   .action(function(args, options, logger) {
     options.logger = logger;
+    args.opts = _.split(args.opts, ",");
+    logger.debug(options);
+    logger.debug(args);
     if (!options.watch) {
       compile(args.target, args.cmd, args.opts, options).catch(() => {});
     } else {
