@@ -142,7 +142,9 @@ let compile = (target, latexcmd, latexopts, options) => {
     filelist = filelist.concat([`_minted-${basename}`]);
     let execrm = `rm -rf ${_.join(filelist, " ")}`;
     try {
-      clipboardy.writeSync(execc);
+      if (process.env.JSLATEX_COPYPB) {
+        clipboardy.writeSync(execc);
+      }
     } catch (e) {
       options.logger.error("For some reason, we can't copy to the clipboard");
     }
