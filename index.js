@@ -172,6 +172,15 @@ let compile = (target, latexcmd, latexopts, options) => {
         }
       })
       .then(() => {
+        if (options.prePress) {
+          let cmd1 = `pdftops ${basename}.pdf ${basename}.ps -r 600 -level3sep`;
+          let cmd2 = `ps2pdf14 -dPDFSETTINGS=/prepress -dEmbedAllFonts=true ${basename}.ps`;
+          return executeCommand(cmd1, { options }).then(() =>
+            executeCommand(cmd2, { options })
+          );
+        }
+      })
+      .then(() => {
         let outputfile = `${basename}.pdf`;
         if (options.png) {
           let cnvcm = `convert -density 300 ${basename}.pdf ${basename}.png`;
@@ -225,6 +234,10 @@ prog
   .option("--silent", "Suppress errors")
   .option("--verbose", "Show all warnings and errors")
   .option("--crop", "Invoke pdfcrop on produced output")
+  .option(
+    "--pre-press",
+    "Applies steps to produce fully compatible pdfs for camera ready"
+  )
   .action(function(args, options, logger) {
     options.logger = logger;
     args.opts = _.split(args.opts, ",");
