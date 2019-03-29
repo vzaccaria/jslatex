@@ -1,3 +1,3 @@
-# Poor-man latex runner
+# Deprecated, look into vz-clitools
 
 
